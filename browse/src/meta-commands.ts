@@ -40,6 +40,7 @@ const CHAIN_META = new Set([
   'screenshot', 'pdf', 'responsive',
   'chain', 'diff',
   'url', 'snapshot',
+  'session',
 ]);
 
 export async function handleMetaCommand(
@@ -80,10 +81,13 @@ export async function handleMetaCommand(
     case 'status': {
       const page = bm.getPage();
       const tabs = bm.getTabCount();
+      const sessionName = bm.getActiveSessionName();
+      const sessionCount = bm.getSessionList().length;
       return [
         `Status: healthy`,
         `URL: ${page.url()}`,
         `Tabs: ${tabs}`,
+        `Session: ${sessionName} (${sessionCount} total)`,
         `PID: ${process.pid}`,
       ].join('\n');
     }
@@ -213,6 +217,35 @@ export async function handleMetaCommand(
     // ─── Snapshot ─────────────────────────────────────
     case 'snapshot': {
       return await handleSnapshot(args, bm);
+    }
+
+    // ─── Session ─────────────────────────────────────
+    case 'session': {
+      const [sub, name] = args;
+      switch (sub) {
+        case 'new': {
+          if (!name) throw new Error('Usage: session new <name>');
+          await bm.newSession(name);
+          return `Created and switched to session "${name}"`;
+        }
+        case 'switch': {
+          if (!name) throw new Error('Usage: session switch <name>');
+          bm.switchSession(name);
+          return `Switched to session "${name}"`;
+        }
+        case 'delete': {
+          if (!name) throw new Error('Usage: session delete <name>');
+          await bm.deleteSession(name);
+          return `Deleted session "${name}"`;
+        }
+        case 'list':
+        default: {
+          const sessions = bm.getSessionList();
+          return sessions.map(s =>
+            `${s.active ? '→ ' : '  '}${s.name} (${s.tabCount} tab${s.tabCount !== 1 ? 's' : ''})`
+          ).join('\n');
+        }
+      }
     }
 
     default:
