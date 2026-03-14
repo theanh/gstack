@@ -205,4 +205,12 @@ describe('session isolation', () => {
     expect(result).toContain('Session:');
     expect(result).toContain('default');
   });
+
+  test('setExtraHeader before launch does not throw', async () => {
+    const fresh = new BrowserManager();
+    // Should not throw — no session exists yet, header is stored globally
+    await fresh.setExtraHeader('X-Test', 'value');
+    // If the getter was used instead of sessions.get(), this would throw:
+    // "No active session "default" — this is a bug"
+  });
 });
